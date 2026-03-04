@@ -1,0 +1,31 @@
+# v0 runtime files
+__v0_runtime_loader.js
+__v0_devtools.tsx
+__v0_jsx-dev-runtime.ts
+
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+
+# Electron builder output
+dist-electron/
+dist/
+
+# Environment
+.env*.local
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
+.vercel
+
+# Logs
+*.log
+
+# Large binary/media files
+*.wav
+*.mp3
