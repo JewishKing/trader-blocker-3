@@ -392,9 +392,16 @@ app.whenReady().then(async () => {
 
     // 5. Auto-updater (production only)
     if (autoUpdater) {
-        autoUpdater.logger = console
-        autoUpdater.autoDownload = true
-        autoUpdater.autoInstallOnAppQuit = true
+        // If your repo is private, electron-updater needs a token to check for releases
+        // We'll try to get it from the environment or a hardcoded fallback if this is a personal app
+        const token = process.env.GH_TOKEN
+        if (token) {
+            autoUpdater.requestHeaders = { "Authorization": `token ${token}` }
+        }
+
+        autoUpdater.on('checking-for-update', () => {
+            console.log('[FocusGuard] 🔍 Checking for updates...')
+        })
 
         autoUpdater.on('update-available', (info) => {
             console.log(`[FocusGuard] 🆕 Update available: v${info.version}`)
@@ -403,6 +410,10 @@ app.whenReady().then(async () => {
                 title: 'FocusGuard Update',
                 content: `v${info.version} is downloading in the background...`,
             })
+        })
+
+        autoUpdater.on('update-not-available', (info) => {
+            console.log('[FocusGuard] ✅ You are on the newest version.')
         })
 
         autoUpdater.on('update-downloaded', (info) => {
@@ -416,11 +427,20 @@ app.whenReady().then(async () => {
         })
 
         autoUpdater.on('error', (err) => {
-            console.error('[FocusGuard] Update error:', err.message)
+            console.error('[FocusGuard] ✗ Update error:', err)
+            if (tray) tray.displayBalloon({
+                iconType: 'error',
+                title: 'FocusGuard — Update Error',
+                content: `Could not check for updates: ${err.message}`,
+            })
         })
 
         // Check on startup (delay slightly so app is fully loaded)
-        setTimeout(() => autoUpdater.checkForUpdates().catch(() => { }), 5000)
+        setTimeout(() => {
+            console.log('[FocusGuard] Triggering startup update check...')
+            autoUpdater.checkForUpdates().catch(err => console.error('[FocusGuard] Check failed:', err))
+        }, 5000)
+
         // Check every hour
         setInterval(() => autoUpdater.checkForUpdates().catch(() => { }), 60 * 60 * 1000)
     }
