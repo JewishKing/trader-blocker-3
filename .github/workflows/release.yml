@@ -41,4 +41,5 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ github.ref_name }} "dist-electron/FocusGuard Setup "*.exe --clobber
+          $exeFile = Get-ChildItem -Path dist-electron -Filter "FocusGuard Setup*.exe" | Select-Object -First 1
+          gh release upload ${{ github.ref_name }} "$($exeFile.FullName)" --clobber
