@@ -1,6 +1,6 @@
 {
   "name": "focusguard",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "FocusGuard - Trading Discipline System for Windows",
   "private": true,
   "main": "electron/main.js",
@@ -44,8 +44,7 @@
     ],
     "win": {
       "target": "nsis",
-      "icon": "public/icon.png",
-      "signAndEditExecutable": false
+      "icon": "public/icon.png"
     },
     "nsis": {
       "oneClick": true,
