@@ -51,11 +51,11 @@ export function ActivityLog() {
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center rounded-lg bg-muted/50 p-1.5">
-              <Radio className="h-4 w-4 text-muted-foreground/60" />
+              <Radio className="h-4 w-4 text-muted-foreground/90" />
             </div>
             <div>
               <h3 className="text-sm font-bold">Live Activity</h3>
-              <p className="text-[11px] text-muted-foreground/40 mt-0.5">
+              <p className="text-sm text-muted-foreground/70 mt-0.5">
                 {agentOnline
                   ? `${data?.killCount || 0} processes blocked`
                   : 'Agent not connected'}
@@ -68,7 +68,7 @@ export function ActivityLog() {
                 <span className="absolute inset-0 rounded-full bg-primary animate-status-ping" />
                 <span className="relative h-1.5 w-1.5 rounded-full bg-primary" />
               </span>
-              <span className="text-[10px] font-semibold text-primary/80 uppercase tracking-wider">Live</span>
+              <span className="text-xs font-semibold text-primary/80 uppercase tracking-wider">Live</span>
             </div>
           )}
         </div>
@@ -83,11 +83,11 @@ export function ActivityLog() {
                   <Bell className="h-3 w-3 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-foreground/80">
+                  <p className="text-sm text-foreground/80">
                     Alert: <span className="font-mono font-bold text-primary">{data.lastAlertTicker || 'Unknown'}</span>
                   </p>
                 </div>
-                <span className="shrink-0 font-mono text-[10px] text-muted-foreground/30">
+                <span className="shrink-0 font-mono text-xs text-muted-foreground/60">
                   {formatTime(data.lastAlertTime)}
                 </span>
               </div>
@@ -97,11 +97,11 @@ export function ActivityLog() {
             {!agentOnline ? (
               <div className="flex flex-col items-center gap-4 py-14 text-center">
                 <div className="flex items-center justify-center rounded-2xl glass-inner p-4">
-                  <Shield className="h-7 w-7 text-muted-foreground/10" />
+                  <Shield className="h-7 w-7 text-muted-foreground/30" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground/30 font-medium">Not connected</p>
-                  <p className="text-[11px] text-muted-foreground/20 mt-1">
+                  <p className="text-sm text-muted-foreground/60 font-medium">Not connected</p>
+                  <p className="text-sm text-muted-foreground/50 mt-1">
                     Start the Python blocker to see events
                   </p>
                 </div>
@@ -109,11 +109,11 @@ export function ActivityLog() {
             ) : killLog.length === 0 ? (
               <div className="flex flex-col items-center gap-4 py-14 text-center">
                 <div className="flex items-center justify-center rounded-2xl glass-inner p-4">
-                  <Lock className="h-7 w-7 text-muted-foreground/10" />
+                  <Lock className="h-7 w-7 text-muted-foreground/30" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground/30 font-medium">No events yet</p>
-                  <p className="text-[11px] text-muted-foreground/20 mt-1">
+                  <p className="text-sm text-muted-foreground/60 font-medium">No events yet</p>
+                  <p className="text-sm text-muted-foreground/50 mt-1">
                     Try opening TradingView or cTrader
                   </p>
                 </div>
@@ -130,14 +130,14 @@ export function ActivityLog() {
                     <Zap className="h-2.5 w-2.5 text-destructive/60 group-hover:text-destructive/80" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs">
+                    <p className="text-sm">
                       <span className="font-mono font-semibold text-destructive/70">
                         {entry.process}
                       </span>
-                      <span className="text-muted-foreground/30"> killed</span>
+                      <span className="text-muted-foreground/60"> killed</span>
                     </p>
                   </div>
-                  <span className="shrink-0 font-mono text-[10px] text-muted-foreground/20 group-hover:text-muted-foreground/40 transition-colors">
+                  <span className="shrink-0 font-mono text-xs text-muted-foreground/50 group-hover:text-muted-foreground/70 transition-colors">
                     {mounted ? formatTime(entry.timestamp) : ''}
                   </span>
                 </div>

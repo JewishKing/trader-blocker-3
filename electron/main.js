@@ -291,6 +291,61 @@ ipcMain.handle('blocker:getSavedPaths', () => {
     return { ctraderPath: cfg.ctraderPath || null, tradingviewPath: cfg.tradingviewPath || null }
 })
 
+// ── Emergency Codes ────────────────────────────────
+const crypto = require('crypto')
+function hashCode(code) { return crypto.createHash('sha256').update(code).digest('hex') }
+
+ipcMain.handle('emergency:getCodes', () => {
+    const { loadConfig } = require('./tunnel')
+    const cfg = loadConfig()
+    return {
+        remaining: (cfg.emergencyCodes || []).length,
+        generated: !!(cfg.emergencyCodes),
+        cooldownUntil: cfg.emergencyCodesCooldown || null,
+    }
+})
+
+ipcMain.handle('emergency:generate', () => {
+    const { loadConfig } = require('./tunnel')
+    const cfg = loadConfig()
+    // Enforce cooldown
+    if (cfg.emergencyCodesCooldown && new Date(cfg.emergencyCodesCooldown) > new Date()) {
+        return { error: 'Cooldown active', cooldownUntil: cfg.emergencyCodesCooldown }
+    }
+    // Generate 5 random 6-digit codes
+    const codes = Array.from({ length: 5 }, () => String(Math.floor(100000 + Math.random() * 900000)))
+    const hashed = codes.map(hashCode)
+    saveConfig({ emergencyCodes: hashed, emergencyCodesCooldown: null })
+    console.log('[FocusGuard] 🆘 Emergency codes generated (5 codes)')
+    return { codes } // return plaintext ONCE so user can write them down
+})
+
+ipcMain.handle('emergency:use', (_e, code) => {
+    const { loadConfig } = require('./tunnel')
+    const cfg = loadConfig()
+    const stored = cfg.emergencyCodes || []
+    if (stored.length === 0) return { error: 'No codes remaining' }
+
+    const hash = hashCode(String(code).trim())
+    const idx = stored.indexOf(hash)
+    if (idx === -1) return { error: 'Invalid code' }
+
+    // Remove the used code
+    stored.splice(idx, 1)
+    // If last code used, set 24h cooldown before new codes can be generated
+    const cooldownUntil = stored.length === 0
+        ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+        : null
+    saveConfig({ emergencyCodes: stored, emergencyCodesCooldown: cooldownUntil })
+
+    // Apply emergency override — bypass and unlock
+    const s = getState()
+    if (s) s.unlock('EMERGENCY', 'Override Code Used')
+
+    console.log(`[FocusGuard] 🆘 Emergency code used. ${stored.length} remaining.`)
+    return { ok: true, remaining: stored.length, cooldownUntil }
+})
+
 // ── Helper ────────────────────────────────────────
 function getIconPath(filename) {
     const base = app.isPackaged

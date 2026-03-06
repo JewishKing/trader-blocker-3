@@ -55,6 +55,8 @@ class BlockerState extends EventEmitter {
         this.ctraderPath = null     // set after path-detection
         this.tradingviewPath = null
         this._reminderSent = { 5: false, 1: false }
+        // Hard Lock Mode — when true, only TradingView alerts can unlock (no manual override)
+        this.hardLockMode = false
     }
 
     /** Unlock for `duration` minutes, optionally launching apps */
@@ -82,6 +84,7 @@ class BlockerState extends EventEmitter {
         this._reminderSent = { 5: false, 1: false }
         console.log('[FocusGuard] 🔒 Force-locked')
         this.emit('locked', { reason: 'force' })
+        return true
     }
 
     /** Called every scan tick — handles expiry + warnings */
@@ -149,6 +152,7 @@ class BlockerState extends EventEmitter {
             lastAlertTime: this.lastAlertTime,
             agentConnected: true,
             autoLaunchEnabled: this.autoLaunchEnabled,
+            hardLockMode: this.hardLockMode,
             ctraderPath: this.ctraderPath,
             tradingviewPath: this.tradingviewPath,
         }
@@ -329,7 +333,10 @@ function createWebhookServer(state) {
                 }
 
                 if (req.url === '/lock' || req.url === '/api/lock') {
-                    state.forceLock()
+                    const result = state.forceLock()
+                    if (result === false) {
+                        return send(403, { success: false, error: 'Hard Lock Mode is active. Only a TradingView alert can unlock.' })
+                    }
                     return send(200, { success: true, locked: true })
                 }
 
@@ -343,11 +350,15 @@ function createWebhookServer(state) {
                         const data = JSON.parse(body)
                         if (data.unlockMinutes) state.unlockMinutes = parseInt(data.unlockMinutes, 10)
                         if ('autoLaunch' in data) state.autoLaunchEnabled = !!data.autoLaunch
+                        if ('hardLockMode' in data) {
+                            state.hardLockMode = !!data.hardLockMode
+                            console.log(`[FocusGuard] 🛡 Hard Lock Mode: ${state.hardLockMode ? 'ON' : 'OFF'}`)
+                        }
                         if ('ctraderPath' in data || 'tradingviewPath' in data) {
                             state.updatePaths(data.ctraderPath, data.tradingviewPath)
                         }
                     } catch { /* ignore bad JSON */ }
-                    return send(200, { success: true, unlockMinutes: state.unlockMinutes })
+                    return send(200, { success: true, unlockMinutes: state.unlockMinutes, hardLockMode: state.hardLockMode })
                 }
 
                 return send(404, { error: 'Not found' })

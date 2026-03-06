@@ -38,11 +38,11 @@ export default function DashboardPage() {
         <div className="mx-auto max-w-6xl flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="h-1 w-1 rounded-full bg-primary/40" />
-            <p className="text-[10px] text-muted-foreground/40 tracking-wide">
+            <p className="text-xs text-muted-foreground/70 tracking-wide">
               FocusGuard v2.0
             </p>
           </div>
-          <p className="text-[10px] text-muted-foreground/30 font-mono">
+          <p className="text-xs text-muted-foreground/60 font-mono">
             localhost:5000
           </p>
         </div>

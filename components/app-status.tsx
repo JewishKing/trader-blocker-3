@@ -117,7 +117,7 @@ function AppCard({
           </div>
           <div>
             <span className="text-sm font-semibold">{name}</span>
-            <p className="text-[10px] text-muted-foreground/60">
+            <p className="text-xs text-muted-foreground/90">
               {configured ? 'Configured' : 'Not configured'}
             </p>
           </div>
@@ -134,12 +134,12 @@ function AppCard({
         </div>
       </div>
       <div className={`
-        text-[10px] px-2.5 py-1 rounded-md font-medium
+        text-xs px-2.5 py-1 rounded-md font-medium
         ${!isLocked
           ? 'bg-primary/5 text-primary border border-primary/10'
           : configured
             ? 'bg-destructive/5 text-destructive/70 border border-destructive/10'
-            : 'bg-muted/50 text-muted-foreground/40 border border-transparent'}
+            : 'bg-muted/50 text-muted-foreground/70 border border-transparent'}
       `}>
         {!isLocked ? '● Running' : configured ? '◼ Blocked' : '○ Inactive'}
       </div>
@@ -167,7 +167,7 @@ function StatCard({
         <Icon className={`h-4 w-4 ${color}`} />
       </div>
       <p className={`text-2xl font-mono font-bold stat-value ${color}`}>{value}</p>
-      <p className="text-[10px] text-muted-foreground/60 mt-1 uppercase tracking-wider font-medium">{label}</p>
+      <p className="text-xs text-muted-foreground/90 mt-1 uppercase tracking-wider font-medium">{label}</p>
     </div>
   )
 }
@@ -214,8 +214,8 @@ export function AppStatus() {
           </div>
           <div>
             <h2 className="text-base font-bold text-destructive">Agent Offline</h2>
-            <p className="text-xs text-muted-foreground/60 mt-2 max-w-md leading-relaxed">
-              Run <code className="font-mono text-[11px] bg-secondary/80 px-2 py-1 rounded-md border border-border/50">python focusguard_blocker.py</code> as Administrator
+            <p className="text-sm text-muted-foreground/90 mt-2 max-w-md leading-relaxed">
+              Run <code className="font-mono text-sm bg-secondary/80 px-2 py-1 rounded-md border border-border/50">python focusguard_blocker.py</code> as Administrator
             </p>
           </div>
         </div>
@@ -228,8 +228,8 @@ export function AppStatus() {
     return (
       <div className="glass-card rounded-2xl p-10 animate-shimmer">
         <div className="flex items-center justify-center gap-3">
-          <Shield className="h-5 w-5 text-muted-foreground/30 animate-breathe" />
-          <span className="text-sm text-muted-foreground/40">Connecting to agent...</span>
+          <Shield className="h-5 w-5 text-muted-foreground/60 animate-breathe" />
+          <span className="text-sm text-muted-foreground/70">Connecting to agent...</span>
         </div>
       </div>
     )
@@ -243,7 +243,7 @@ export function AppStatus() {
   const remainTotalSec = remainingMin * 60 + remainingSec
 
   const timerColor = (() => {
-    if (isLocked) return 'text-muted-foreground/30'
+    if (isLocked) return 'text-muted-foreground/60'
     if (remainingMin === 0) {
       if (remainingSec <= 10) return 'text-destructive'
       if (remainingSec <= 30) return 'text-orange-400'
@@ -283,7 +283,7 @@ export function AppStatus() {
               <h2 className="text-xl font-bold tracking-tight">
                 {isLocked ? 'Trading Apps Blocked' : 'Trading Window Open'}
               </h2>
-              <p className="text-xs text-muted-foreground/50 mt-1">
+              <p className="text-sm text-muted-foreground/80 mt-1">
                 {isLocked
                   ? 'Waiting for TradingView alert webhook'
                   : `Session expires in ${remainingMin}m ${remainingSec}s`}
@@ -294,7 +294,7 @@ export function AppStatus() {
           {alertCount > 0 && (
             <div className="flex items-center gap-1.5 glass-inner rounded-full px-3.5 py-1.5">
               <Bell className="h-3 w-3 text-amber-400" />
-              <span className="text-xs font-mono font-bold text-amber-400">{alertCount}</span>
+              <span className="text-sm font-mono font-bold text-amber-400">{alertCount}</span>
             </div>
           )}
         </div>
@@ -306,8 +306,8 @@ export function AppStatus() {
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               {isLocked ? (
                 <>
-                  <Shield className="h-10 w-10 text-muted-foreground/10 mb-1" />
-                  <span className="text-[10px] font-semibold text-muted-foreground/30 uppercase tracking-widest">
+                  <Shield className="h-10 w-10 text-muted-foreground/30 mb-1" />
+                  <span className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-widest">
                     Secured
                   </span>
                 </>
@@ -316,7 +316,7 @@ export function AppStatus() {
                   <span className={`text-4xl font-mono font-bold tracking-tighter stat-value ${timerColor}`}>
                     {remainingMin}:{remainingSec.toString().padStart(2, '0')}
                   </span>
-                  <span className="text-[10px] text-muted-foreground/40 mt-1.5 uppercase tracking-wider font-medium">
+                  <span className="text-xs text-muted-foreground/70 mt-1.5 uppercase tracking-wider font-medium">
                     remaining
                   </span>
                 </>
@@ -351,7 +351,7 @@ export function AppStatus() {
         {/* ── Recent Alerts Mini Feed ── */}
         {alertHistory.length > 0 && (
           <div className="mt-6 glass-inner rounded-xl p-4">
-            <p className="text-[10px] text-muted-foreground/40 mb-3 uppercase tracking-widest font-semibold">
+            <p className="text-xs text-muted-foreground/70 mb-3 uppercase tracking-widest font-semibold">
               Latest Alerts
             </p>
             <div className="flex flex-col gap-2">
@@ -362,14 +362,14 @@ export function AppStatus() {
                   style={{ animationDelay: `${i * 100}ms` }}
                 >
                   <div className="flex items-center gap-2.5">
-                    <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-md border border-primary/10">
+                    <span className="text-sm font-mono font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-md border border-primary/10">
                       {alert.ticker}
                     </span>
-                    <span className="text-xs text-muted-foreground/50 truncate max-w-[180px]">
+                    <span className="text-sm text-muted-foreground/80 truncate max-w-[180px]">
                       {alert.message}
                     </span>
                   </div>
-                  <span className="text-[10px] font-mono text-muted-foreground/30 shrink-0 ml-3">
+                  <span className="text-xs font-mono text-muted-foreground/60 shrink-0 ml-3">
                     {alert.time ? new Date(alert.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                   </span>
                 </div>
