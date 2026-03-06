@@ -1,6 +1,6 @@
 {
   "name": "focusguard",
-  "version": "2.0.5",
+  "version": "2.0.6",
   "description": "FocusGuard - Trading Discipline System for Windows",
   "private": true,
   "main": "electron/main.js",
