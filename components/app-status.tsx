@@ -125,10 +125,10 @@ function AppCard({
         <div className="flex items-center gap-1.5">
           <span
             className={`h-2.5 w-2.5 rounded-full transition-all ${!isLocked
-                ? 'bg-primary shadow-[0_0_8px_rgba(56,210,248,0.5)]'
-                : configured
-                  ? 'bg-destructive shadow-[0_0_8px_rgba(248,80,56,0.3)]'
-                  : 'bg-muted-foreground/20'
+              ? 'bg-primary shadow-[0_0_8px_rgba(56,210,248,0.5)]'
+              : configured
+                ? 'bg-destructive shadow-[0_0_8px_rgba(248,80,56,0.3)]'
+                : 'bg-muted-foreground/20'
               }`}
           />
         </div>
@@ -215,7 +215,7 @@ export function AppStatus() {
           <div>
             <h2 className="text-base font-bold text-destructive">Agent Offline</h2>
             <p className="text-sm text-muted-foreground/90 mt-2 max-w-md leading-relaxed">
-              Run <code className="font-mono text-sm bg-secondary/80 px-2 py-1 rounded-md border border-border/50">python focusguard_blocker.py</code> as Administrator
+              Run <code className="font-mono text-[11px] bg-secondary/80 px-2 py-1 rounded-md border border-border/50">python scripts/focusguard_blocker.py</code> as Administrator
             </p>
           </div>
         </div>
