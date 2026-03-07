@@ -275,13 +275,13 @@ export function AlertPanel() {
           <div className="flex flex-col gap-3">
             <button
               onClick={simulateAlert}
-              disabled={isSimulating}
+              disabled={isSimulating || status?.hardLockMode}
               className={`group relative w-full flex items-center justify-center gap-2.5 rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${simSuccess
                 ? 'bg-primary/15 text-primary border border-primary/25 glow-primary'
                 : 'bg-gradient-to-r from-primary/10 to-primary/5 text-primary border border-primary/15 hover:border-primary/30 hover:from-primary/15 hover:to-primary/10 hover:shadow-[0_0_20px_-5px_rgba(56,210,248,0.2)]'
                 }`}
             >
-              {simSuccess ? <><Sparkles className="h-4 w-4" />Alert Sent!</> : <><Play className="h-3.5 w-3.5" />{isSimulating ? 'Sending...' : 'Simulate Alert'}</>}
+              {simSuccess ? <><Sparkles className="h-4 w-4" />Alert Sent!</> : <><Play className="h-3.5 w-3.5" />{status?.hardLockMode ? 'Disabled in Hard Lock' : isSimulating ? 'Sending...' : 'Simulate Alert'}</>}
             </button>
             <button
               onClick={forceLock}
