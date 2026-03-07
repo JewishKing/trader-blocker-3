@@ -463,6 +463,12 @@ app.on('before-quit', async () => {
     if (uiServer) uiServer.close()
     await stopTunnel()
     stopBlocker()
+
+    // Safety Force Kill: Ensure no hidden zombie Python scripts or old blocker 
+    // instances lock the executable, which breaks auto-updates.
+    try {
+        require('child_process').exec('taskkill /f /im python.exe /t')
+    } catch (e) { /* ignore */ }
 })
 
 process.on('uncaughtException', (error) => {
