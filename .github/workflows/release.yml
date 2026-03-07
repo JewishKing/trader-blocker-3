@@ -40,6 +40,6 @@ jobs:
       - name: Manually Upload Release Asset
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
         run: |
-          $exeFile = Get-ChildItem -Path dist-electron -Filter "FocusGuard Setup*.exe" | Select-Object -First 1
-          gh release upload ${{ github.ref_name }} "$($exeFile.FullName)" --clobber
+          gh release upload ${{ github.ref_name }} dist-electron/FocusGuard\ Setup\ *.exe --clobber
