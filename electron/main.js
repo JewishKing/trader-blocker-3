@@ -427,12 +427,13 @@ app.whenReady().then(async () => {
         })
 
         autoUpdater.on('error', (err) => {
-            console.error('[FocusGuard] ✗ Update error:', err)
-            if (tray) tray.displayBalloon({
-                iconType: 'error',
-                title: 'FocusGuard — Update Error',
-                content: `Could not check for updates: ${err.message}`,
-            })
+            console.error('[FocusGuard] ✗ Update check failed:', err.message)
+            // Suppress popup for 404/Unauthorized errors (expected if repo is private and no token)
+            // if (tray) tray.displayBalloon({
+            //     iconType: 'error',
+            //     title: 'FocusGuard — Update Error',
+            //     content: `Could not check for updates: ${err.message}`,
+            // })
         })
 
         // Check on startup (delay slightly so app is fully loaded)
