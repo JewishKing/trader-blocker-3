@@ -1,6 +1,6 @@
 {
   "name": "focusguard",
-  "version": "2.0.16",
+  "version": "2.0.17",
   "description": "FocusGuard - Trading Discipline System for Windows",
   "private": true,
   "main": "electron/main.js",
@@ -97,6 +97,7 @@
     "clsx": "^2.1.1",
     "cmdk": "1.1.1",
     "date-fns": "4.1.0",
+    "electron-log": "^5.4.3",
     "electron-updater": "^6.8.3",
     "embla-carousel-react": "8.6.0",
     "input-otp": "1.4.2",

@@ -13,7 +13,13 @@ const { showAlertNotification } = require('./notification')
 // ── Auto Updater (production only) ───────────────
 let autoUpdater = null
 if (!process.argv.includes('--dev') && process.env.NODE_ENV !== 'development') {
-    try { autoUpdater = require('electron-updater').autoUpdater } catch { /* ignore in dev */ }
+    try {
+        autoUpdater = require('electron-updater').autoUpdater
+        const log = require('electron-log')
+        log.transports.file.level = 'info'
+        autoUpdater.logger = log
+        console.log('[FocusGuard] electron-updater logging initialized in AppData/Roaming/focusguard/logs/')
+    } catch { /* ignore in dev */ }
 }
 
 const BLOCKER_PORT = 51700   // Must match blocker.js
@@ -194,7 +200,24 @@ function updateTrayMenu() {
         { label: 'Force Lock Now', click: () => { const s = getState(); if (s) s.forceLock() } },
         { type: 'separator' },
         ...(updateReady && autoUpdater ? [
-            { label: '🚀 Install Update & Restart', click: () => { isQuitting = true; autoUpdater.quitAndInstall() } }
+            {
+                label: '🚀 Install Update & Restart', click: () => {
+                    console.log('[FocusGuard] 💥 Executing Scorched-Earth Updater Teardown...')
+                    isQuitting = true;
+                    if (uiServer) { try { uiServer.close() } catch (e) { } }
+                    try { require('./blocker').stopBlocker() } catch (e) { }
+
+                    // Sever the OS File Locks instantly so NSIS can overwrite the executable
+                    require('child_process').exec('taskkill /f /im python.exe /t', () => { })
+                    require('child_process').exec('taskkill /f /im ngrok.exe /t', () => { })
+
+                    // Allow OS exactly 500ms to instantly drop file handles, then shatter the main process
+                    setTimeout(() => {
+                        console.log('[FocusGuard] Triggering quitAndInstall()')
+                        autoUpdater.quitAndInstall(false, true)
+                    }, 500)
+                }
+            }
         ] : []),
         { label: 'Quit FocusGuard', click: () => { isQuitting = true; app.quit() } },
     ])
