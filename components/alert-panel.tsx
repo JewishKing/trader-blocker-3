@@ -33,9 +33,9 @@ function SoundPicker() {
   const customFileName = isCustom ? selected.split(':')[1] : ''
 
   return (
-    <div className="glass-card rounded-2xl p-5 relative overflow-hidden flex flex-col h-full">
+    <div className="glass-card rounded-2xl p-5 relative overflow-hidden">
       <div className="absolute -top-8 -right-8 w-20 h-20 bg-amber-400/4 rounded-full blur-2xl pointer-events-none" />
-      <div className="relative flex-1 flex flex-col justify-center">
+      <div className="relative">
         <div className="flex items-center gap-2 mb-6">
           <div className="flex items-center justify-center rounded-lg bg-amber-400/10 p-1.5">
             <Volume2 className="h-4 w-4 text-amber-400" />
