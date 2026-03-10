@@ -23,6 +23,7 @@ let mainWindow = null
 let tray = null
 let uiServer = null
 let isQuitting = false
+let updateReady = false
 
 const isDev = process.env.NODE_ENV === 'development' || process.argv.includes('--dev')
 
@@ -192,6 +193,9 @@ function updateTrayMenu() {
         { label: 'Open Dashboard', click: () => { if (mainWindow) { mainWindow.show(); mainWindow.focus() } } },
         { label: 'Force Lock Now', click: () => { const s = getState(); if (s) s.forceLock() } },
         { type: 'separator' },
+        ...(updateReady && autoUpdater ? [
+            { label: '🚀 Install Update & Restart', click: () => { isQuitting = true; autoUpdater.quitAndInstall() } }
+        ] : []),
         { label: 'Quit FocusGuard', click: () => { isQuitting = true; app.quit() } },
     ])
     tray.setContextMenu(menu)
@@ -441,10 +445,11 @@ app.whenReady().then(async () => {
 
         autoUpdater.on('update-downloaded', (info) => {
             console.log(`[FocusGuard] ✅ Update downloaded: v${info.version}`)
+            updateReady = true
             if (tray) tray.displayBalloon({
                 iconType: 'info',
                 title: 'FocusGuard — Update Ready',
-                content: `v${info.version} is ready. It will install when you quit.`,
+                content: `v${info.version} is ready. Right-click the tray icon to Install.`,
             })
             updateTrayMenu()
         })
