@@ -204,6 +204,7 @@
 
     let loopTimer = null;
     let currentSound = 'bell';
+    let customAudio = null;
 
     // ── Sound Presets ─────────────────────────────────────────────────────────────
     const SOUNDS = {
@@ -259,11 +260,21 @@
     function startLoop(name) {
       stopLoop();
       currentSound = name;
-      playSound(name);
-      loopTimer = setInterval(() => playSound(currentSound), 1000);
+      if (name && name.startsWith('file://')) {
+        customAudio = new Audio(name);
+        customAudio.loop = true;
+        customAudio.play().catch(e => console.error('Custom audio error:', e));
+      } else {
+        playSound(name);
+        loopTimer = setInterval(() => playSound(currentSound), 1000);
+      }
     }
 
     function stopLoop() {
+      if (customAudio) {
+        customAudio.pause();
+        customAudio.currentTime = 0;
+      }
       if (loopTimer) {
         clearInterval(loopTimer);
         loopTimer = null;

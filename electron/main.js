@@ -271,6 +271,29 @@ ipcMain.handle('sound:get', () => {
 ipcMain.handle('sound:set', (_e, sound) => {
     saveConfig({ alertSound: sound }); return { ok: true }
 })
+ipcMain.handle('sound:upload', async () => {
+    const { dialog } = require('electron')
+    const result = await dialog.showOpenDialog({
+        properties: ['openFile'],
+        filters: [{ name: 'Audio Files', extensions: ['mp3', 'wav', 'ogg', 'm4a'] }]
+    })
+
+    if (result.canceled || result.filePaths.length === 0) {
+        return { canceled: true }
+    }
+
+    const srcPath = result.filePaths[0]
+    const ext = path.extname(srcPath)
+    const destName = `custom_alarm_${Date.now()}${ext}`
+    const destPath = path.join(app.getPath('userData'), destName)
+
+    fs.copyFileSync(srcPath, destPath)
+
+    const finalSound = `custom:${destName}`
+    saveConfig({ alertSound: finalSound })
+
+    return { canceled: false, sound: finalSound }
+})
 ipcMain.handle('blocker:updatePaths', (_e, { ctraderPath, tradingviewPath }) => {
     const s = getState()
     if (s) {

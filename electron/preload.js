@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // Sound
     getAlertSound: () => ipcRenderer.invoke('sound:get'),
     setAlertSound: (sound) => ipcRenderer.invoke('sound:set', sound),
+    uploadAlertSound: () => ipcRenderer.invoke('sound:upload'),
     // App Paths / Auto-launch
     getSavedPaths: () => ipcRenderer.invoke('blocker:getSavedPaths'),
     updatePaths: (paths) => ipcRenderer.invoke('blocker:updatePaths', paths),

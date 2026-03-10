@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <style>
+        :root {
+            --bg: #09090b;
+            --card: #18181b;
+            --border: #27272a;
+            --text: #fafafa;
+            --primary: #38bdf8;
+            --danger: #ef4444;
+            --muted: #a1a1aa;
+        }
+
+        body {
+            width: 300px;
+            margin: 0;
+            padding: 16px;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        .header {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header::before {
+            content: '';
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background: var(--primary);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--primary);
+        }
+
+        .subtitle {
+            font-size: 11px;
+            color: var(--muted);
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 12px;
+        }
+
+        .live-price-box {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .live-asset {
+            font-size: 11px;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 4px;
+        }
+
+        .live-price-label {
+            font-size: 10px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .live-price-value {
+            font-size: 24px;
+            font-weight: bold;
+            font-family: monospace;
+            color: var(--primary);
+            margin-top: 4px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            font-size: 11px;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+
+        input,
+        select {
+            width: 100%;
+            box-sizing: border-box;
+            background: #111;
+            border: 1px solid var(--border);
+            color: white;
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-family: monospace;
+            outline: none;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: var(--primary);
+        }
+
+        .btn {
+            width: 100%;
+            background: var(--primary);
+            color: black;
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .status {
+            margin-top: 12px;
+            font-size: 11px;
+            text-align: center;
+            color: var(--muted);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">FocusGuard Bridge</div>
+    <div class="subtitle">Custom Alerts for Deriv TradingView</div>
+
+    <div class="live-price-box">
+        <div class="live-asset" id="live-asset">Detecting Asset...</div>
+        <div class="live-price-value" id="live-price">Loading...</div>
+    </div>
+
+    <div id="setup-view">
+        <div class="form-group">
+            <label>Target Price</label>
+            <input type="number" step="any" id="target-price" placeholder="e.g. 1.10450">
+        </div>
+        <div class="form-group">
+            <label>Alert Condition</label>
+            <select id="condition">
+                <option value="above">Crosses Above or Equals (≥)</option>
+                <option value="below">Crosses Below or Equals (≤)</option>
+            </select>
+        </div>
+        <button class="btn" id="btn-set">Set FocusGuard Alert</button>
+    </div>
+
+    <div id="active-view" style="display: none;">
+        <div style="text-align: center; margin-bottom: 16px;">
+            <div style="font-size: 11px; color: var(--muted);">Alert Active for</div>
+            <div style="font-size: 14px; font-weight: bold; color: white; margin-top: 4px;" id="active-asset-name">
+            </div>
+            <div style="font-size: 18px; font-weight: bold; font-family: monospace; margin-top: 4px;">
+                <span id="active-condition"></span> <span id="active-target" style="color: var(--primary);"></span>
+            </div>
+            <div id="asset-warning" style="display: none; color: var(--danger); font-size: 10px; margin-top: 8px;">
+                ⚠️ Wrong asset active. Switch back to trigger.
+            </div>
+        </div>
+        <button class="btn btn-danger" id="btn-cancel">Cancel Alert</button>
+    </div>
+
+    <div class="status" id="status-msg"></div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>

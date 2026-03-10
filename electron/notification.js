@@ -83,11 +83,19 @@ function showAlertNotification({ ticker, message, duration, onView }) {
     notifWindow.once('ready-to-show', () => {
         if (notifWindow && !notifWindow.isDestroyed()) {
             notifWindow.showInactive()
+
+            let finalSound = sound
+            if (sound && sound.startsWith('custom:')) {
+                const fileName = sound.split(':')[1]
+                const fullPath = path.join(app.getPath('userData'), fileName)
+                finalSound = 'file://' + fullPath.replace(/\\/g, '/')
+            }
+
             notifWindow.webContents.send('notif:data', {
                 ticker: ticker || 'ALERT',
                 message: message || 'Trading window is now open',
                 duration: duration || 30,
-                sound,
+                sound: finalSound,
             })
         }
     })

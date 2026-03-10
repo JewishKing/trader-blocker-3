@@ -10,102 +10,53 @@ const fetcher = (url: string) => fetch(url).then(r => r.json())
 // Check if running inside Electron
 const electron = typeof window !== 'undefined' ? (window as any).electronAPI : null
 
-// ── Sound presets (synced with notification.html) ─────────────────────────────
-const SOUND_PRESETS = [
-  { id: 'bell', emoji: '🔔', name: 'Bell', desc: 'Rich harmonic chord' },
-  { id: 'trumpet', emoji: '🎺', name: 'Trumpet', desc: 'Sharp sawtooth fanfare' },
-  { id: 'chime', emoji: '✨', name: 'Chime', desc: 'Ascending crystal notes' },
-  { id: 'alarm', emoji: '🚨', name: 'Alarm', desc: 'Urgent double beep' },
-  { id: 'horn', emoji: '📯', name: 'Horn', desc: 'Deep dramatic blast' },
-  { id: 'ping', emoji: '💫', name: 'Ping', desc: 'Clean single tone' },
-]
-
-type SoundId = 'bell' | 'trumpet' | 'chime' | 'alarm' | 'horn' | 'ping'
-
-// Web Audio preview — mirrors the sounds in notification.html
-function previewSound(name: SoundId) {
-  try {
-    const ctx = new AudioContext()
-    const t = ctx.currentTime
-    if (name === 'bell') {
-      [[880, .35, 1.8], [1320, .20, 1.2], [1760, .12, .8], [2200, .06, .5]].forEach(([f, g, d]) => {
-        const o = ctx.createOscillator(), gn = ctx.createGain()
-        o.connect(gn); gn.connect(ctx.destination); o.type = 'sine'; o.frequency.value = f
-        gn.gain.setValueAtTime(0, t + .1); gn.gain.linearRampToValueAtTime(g, t + .13); gn.gain.exponentialRampToValueAtTime(.001, t + d); o.start(t + .1); o.stop(t + d + .05)
-      })
-    } else if (name === 'trumpet') {
-      const o = ctx.createOscillator(), gn = ctx.createGain(), filt = ctx.createBiquadFilter()
-      o.connect(filt); filt.connect(gn); gn.connect(ctx.destination); o.type = 'sawtooth'; filt.type = 'lowpass'
-      o.frequency.setValueAtTime(587, t); o.frequency.linearRampToValueAtTime(880, t + .08)
-      filt.frequency.setValueAtTime(800, t); filt.frequency.exponentialRampToValueAtTime(3200, t + .12)
-      gn.gain.setValueAtTime(0, t); gn.gain.linearRampToValueAtTime(.3, t + .06); gn.gain.setValueAtTime(.3, t + .3); gn.gain.exponentialRampToValueAtTime(.001, t + .9)
-      o.start(t); o.stop(t + 1)
-    } else if (name === 'chime') {
-      [1047, 1319, 1568, 2093].forEach((f, i) => {
-        const o = ctx.createOscillator(), gn = ctx.createGain(); o.connect(gn); gn.connect(ctx.destination); o.type = 'sine'; o.frequency.value = f
-        const s = t + i * .13; gn.gain.setValueAtTime(0, s); gn.gain.linearRampToValueAtTime(.28, s + .02); gn.gain.exponentialRampToValueAtTime(.001, s + 1.2); o.start(s); o.stop(s + 1.3)
-      })
-    } else if (name === 'alarm') {
-      [[0, .32], [.22, .1]].forEach(([delay, off]) => {
-        const o = ctx.createOscillator(), gn = ctx.createGain(); o.connect(gn); gn.connect(ctx.destination)
-        o.type = 'square'; o.frequency.value = 1047; const s = t + delay
-        gn.gain.setValueAtTime(.25, s); gn.gain.setValueAtTime(0, s + .18 - off); o.start(s); o.stop(s + .2)
-      })
-    } else if (name === 'horn') {
-      const o = ctx.createOscillator(), gn = ctx.createGain(), filt = ctx.createBiquadFilter()
-      o.connect(filt); filt.connect(gn); gn.connect(ctx.destination); o.type = 'sawtooth'; filt.type = 'lowpass'; filt.frequency.value = 600; o.frequency.value = 220
-      gn.gain.setValueAtTime(0, t); gn.gain.linearRampToValueAtTime(.4, t + .1); gn.gain.setValueAtTime(.4, t + .5); gn.gain.exponentialRampToValueAtTime(.001, t + 1.2); o.start(t); o.stop(t + 1.3)
-    } else if (name === 'ping') {
-      const o = ctx.createOscillator(), gn = ctx.createGain(); o.connect(gn); gn.connect(ctx.destination); o.type = 'sine'; o.frequency.value = 1760
-      gn.gain.setValueAtTime(.5, t); gn.gain.exponentialRampToValueAtTime(.001, t + .8); o.start(t); o.stop(t + .85)
-    }
-  } catch { /* ignore */ }
-}
-
+// Only Custom Sounds remain ─────────────────────────────
 function SoundPicker() {
-  const [selected, setSelected] = useState<SoundId>('bell')
+  const [selected, setSelected] = useState<string>('')
 
   useEffect(() => {
     if (!electron) return
-    electron.getAlertSound?.().then((s: SoundId) => { if (s) setSelected(s) })
+    electron.getAlertSound?.().then((s: string) => {
+      if (s && s.startsWith('custom:')) setSelected(s)
+    })
   }, [])
 
-  const handleSelect = async (id: SoundId) => {
-    setSelected(id)
-    previewSound(id)
-    if (electron) await electron.setAlertSound?.(id)
+  const handleUploadCustom = async () => {
+    if (!electron) return
+    const res = await electron.uploadAlertSound?.()
+    if (res && !res.canceled && res.sound) {
+      setSelected(res.sound)
+    }
   }
 
+  const isCustom = selected.startsWith('custom:')
+  const customFileName = isCustom ? selected.split(':')[1] : ''
+
   return (
-    <div className="glass-card rounded-2xl p-5 relative overflow-hidden">
+    <div className="glass-card rounded-2xl p-5 relative overflow-hidden flex flex-col h-full">
       <div className="absolute -top-8 -right-8 w-20 h-20 bg-amber-400/4 rounded-full blur-2xl pointer-events-none" />
-      <div className="relative">
-        <div className="flex items-center gap-2 mb-4">
+      <div className="relative flex-1 flex flex-col justify-center">
+        <div className="flex items-center gap-2 mb-6">
           <div className="flex items-center justify-center rounded-lg bg-amber-400/10 p-1.5">
-            <Volume2 className="h-3.5 w-3.5 text-amber-400" />
+            <Volume2 className="h-4 w-4 text-amber-400" />
           </div>
-          <h3 className="text-sm font-bold">Alert Sound</h3>
-          <span className="ml-auto text-[10px] text-muted-foreground/40">click to preview</span>
+          <h3 className="text-sm font-bold">Custom Alarm Audio</h3>
         </div>
-        <div className="grid grid-cols-3 gap-2">
-          {SOUND_PRESETS.map(({ id, emoji, name, desc }) => {
-            const active = selected === id
-            return (
-              <button
-                key={id}
-                onClick={() => handleSelect(id as SoundId)}
-                className={`flex flex-col items-center gap-1.5 rounded-xl p-3 border transition-all duration-200 cursor-pointer text-center ${active
-                  ? 'bg-amber-400/10 border-amber-400/30 shadow-[0_0_14px_-4px_rgba(251,191,36,0.25)]'
-                  : 'bg-secondary/30 border-border/20 hover:border-border/50 hover:bg-secondary/50'
-                  }`}
-              >
-                <span className="text-xl">{emoji}</span>
-                <span className={`text-[11px] font-bold ${active ? 'text-amber-400' : 'text-foreground/80'}`}>{name}</span>
-                <span className="text-[9.5px] text-muted-foreground/40 leading-tight">{desc}</span>
-              </button>
-            )
-          })}
-        </div>
+
+        <button
+          onClick={handleUploadCustom}
+          className={`w-full flex items-center justify-center gap-2 rounded-xl p-4 border transition-all duration-200 cursor-pointer ${isCustom
+            ? 'bg-amber-400/10 border-amber-400/30 shadow-[0_0_14px_-4px_rgba(251,191,36,0.25)]'
+            : 'bg-secondary/30 border-border/20 hover:border-border/50 hover:bg-secondary/50'
+            }`}
+        >
+          <div className="flex flex-col items-center">
+            <span className={`text-[12px] font-bold ${isCustom ? 'text-amber-400' : 'text-foreground/80'}`}>
+              {isCustom ? '🎵 Active Audio File' : '📁 Upload Custom Audio (.mp3)'}
+            </span>
+            {isCustom && <span className="text-[10px] text-amber-400/60 leading-tight mt-1 truncate max-w-[200px] font-mono">{customFileName}</span>}
+          </div>
+        </button>
       </div>
     </div>
   )
