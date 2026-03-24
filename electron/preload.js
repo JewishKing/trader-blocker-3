@@ -22,6 +22,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getSavedPaths: () => ipcRenderer.invoke('blocker:getSavedPaths'),
     updatePaths: (paths) => ipcRenderer.invoke('blocker:updatePaths', paths),
     setAutoLaunch: (enabled) => ipcRenderer.invoke('blocker:setAutoLaunch', enabled),
+    // cTrader Bot
+    installCTraderBot: () => ipcRenderer.invoke('ctrader:installBot'),
     // Emergency Codes
     getEmergencyCodes: () => ipcRenderer.invoke('emergency:getCodes'),
     generateEmergencyCodes: () => ipcRenderer.invoke('emergency:generate'),

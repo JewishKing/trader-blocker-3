@@ -341,6 +341,74 @@ ipcMain.handle('blocker:getSavedPaths', () => {
     return { ctraderPath: cfg.ctraderPath || null, tradingviewPath: cfg.tradingviewPath || null }
 })
 
+ipcMain.handle('ctrader:installBot', async () => {
+    try {
+        const cAlgoRobotsDir = path.join(process.env.USERPROFILE || process.env.HOME, 'Documents', 'cAlgo', 'Sources', 'Robots')
+        if (!fs.existsSync(cAlgoRobotsDir)) {
+            return { error: 'cTrader Automate directory not found. Please open cTrader at least once.' }
+        }
+
+        const botDir = path.join(cAlgoRobotsDir, 'FocusGuardBridge')
+        if (!fs.existsSync(botDir)) fs.mkdirSync(botDir, { recursive: true })
+
+        const botCode = `using System;
+using System.Net;
+using System.Text;
+using cAlgo.API;
+
+namespace cAlgo.Robots
+{
+    [Robot(TimeZone = TimeZones.UTC, AccessRights = AccessRights.FullAccess)]
+    public class FocusGuardBridge : Robot
+    {
+        protected override void OnStart()
+        {
+            Print("FocusGuard Webhook Bridge Started. Listening for Native Alerts...");
+            PriceAlerts.Triggered += OnPriceAlertTriggered;
+        }
+
+        private void OnPriceAlertTriggered(PriceAlertTriggeredEventArgs args)
+        {
+            Print("Native Alert Triggered for {0} at {1}. Sending webhook to FocusGuard...", args.PriceAlert.SymbolName, args.PriceAlert.Price);
+            SendWebhook(args.PriceAlert.SymbolName, "Alert Triggered at " + args.PriceAlert.Price);
+        }
+
+        private void SendWebhook(string ticker, string message)
+        {
+            try
+            {
+                var request = WebRequest.Create("http://localhost:51700/api/alert");
+                request.Method = "POST";
+                request.ContentType = "application/json";
+                
+                string json = string.Format("{\\"ticker\\":\\"{0}\\", \\"message\\":\\"{1}\\"}", ticker, message);
+                byte[] data = Encoding.UTF8.GetBytes(json);
+                request.ContentLength = data.Length;
+                
+                using (var stream = request.GetRequestStream())
+                {
+                    stream.Write(data, 0, data.Length);
+                }
+                
+                request.GetResponse();
+                Print("FocusGuard Unlocked Successfully!");
+            }
+            catch (Exception ex)
+            {
+                Print("Webhook Error: " + ex.Message);
+            }
+        }
+    }
+}
+`
+        fs.writeFileSync(path.join(botDir, 'FocusGuardBridge.cs'), botCode)
+        return { ok: true }
+    } catch (err) {
+        console.error('Failed to install cTrader Bot:', err)
+        return { error: err.message }
+    }
+})
+
 // ── Emergency Codes ────────────────────────────────
 const crypto = require('crypto')
 function hashCode(code) { return crypto.createHash('sha256').update(code).digest('hex') }

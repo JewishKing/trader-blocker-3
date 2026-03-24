@@ -357,6 +357,57 @@ export function AlertPanel() {
         </div>
       </div>
 
+      {/* cTrader Bridge Card */}
+      {electron && (
+        <div className="glass-card rounded-2xl p-6 relative overflow-hidden">
+          <div className="absolute -top-12 -right-12 w-28 h-28 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative">
+            <div className="flex items-center gap-2.5 mb-2">
+              <div className="flex items-center justify-center rounded-lg bg-emerald-500/10 p-1.5">
+                <Globe className="h-4 w-4 text-emerald-400" />
+              </div>
+              <h3 className="text-sm font-bold">cTrader Native Alerts</h3>
+            </div>
+            
+            <p className="text-xs text-muted-foreground/70 pl-8 mb-4">
+              Unlock FocusGuard using built-in cTrader Price Alerts natively (No TradingView required).
+            </p>
+
+            <div className="pl-8">
+              <button
+                onClick={async () => {
+                  const btn = document.getElementById('ctrader-btn');
+                  if (btn) btn.innerHTML = '<span class="animate-pulse">Installing...</span>';
+                  const res = await electron.installCTraderBot();
+                  if (btn) {
+                    if (res?.ok) {
+                      btn.innerHTML = '<span class="text-emerald-400">✅ Installed to cTrader Automate!</span>';
+                      btn.classList.add('border-emerald-500/30', 'bg-emerald-500/10');
+                    } else {
+                      btn.innerHTML = '<span class="text-destructive">❌ ' + (res?.error || 'Failed') + '</span>';
+                      btn.classList.add('border-destructive/30', 'bg-destructive/10');
+                    }
+                    setTimeout(() => {
+                      btn.innerHTML = '🔌 Install cTrader Alert Bridge';
+                      btn.className = "w-full flex items-center justify-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/15 text-emerald-400 text-sm font-semibold px-4 py-3 transition-all cursor-pointer";
+                    }, 4000);
+                  }
+                }}
+                id="ctrader-btn"
+                className="w-full flex items-center justify-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/15 text-emerald-400 text-sm font-semibold px-4 py-3 transition-all cursor-pointer"
+              >
+                🔌 Install cTrader Alert Bridge
+              </button>
+              <p className="text-[10px] text-muted-foreground/40 mt-3 flex items-start gap-1.5 leading-relaxed">
+                <span className="text-emerald-400 font-bold mt-[-1px]">1.</span> Install it above.<br/>
+                <span className="text-emerald-400 font-bold mt-[-1px]">2.</span> Open cTrader → Automate. Run <span className="text-emerald-400/80 font-mono bg-emerald-500/10 px-1 rounded">FocusGuardBridge</span> on any chart.<br/>
+                <span className="text-emerald-400 font-bold mt-[-1px]">3.</span> Use native cTrader alerts as normal!
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* How It Works */}
       <div className="glass-card rounded-2xl p-6 relative overflow-hidden">
         <div className="absolute -top-8 -right-8 w-20 h-20 bg-primary/3 rounded-full blur-2xl pointer-events-none" />
