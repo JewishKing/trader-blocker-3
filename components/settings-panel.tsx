@@ -54,6 +54,7 @@ export function SettingsPanel() {
 
   const agentOnline = !!blockerData
   const isLocked = blockerData?.isLocked ?? true
+  const isDisabled = blockerData?.disabled ?? false
 
   // Load emergency code info
   useEffect(() => {
@@ -102,6 +103,21 @@ export function SettingsPanel() {
       console.error('Failed to force lock:', error)
     }
   }, [mutate])
+
+  const handleToggleBlocker = useCallback(async () => {
+    const electron = (window as any).electronAPI
+    if (!electron) return
+    try {
+      if (isDisabled) {
+        await electron.enableBlocker()
+      } else {
+        await electron.disableBlocker()
+      }
+      setTimeout(() => mutate(), 300)
+    } catch (error) {
+      console.error('Failed to toggle blocker:', error)
+    }
+  }, [isDisabled, mutate])
 
   const handleHardLockToggle = async () => {
     if (!agentOnline) return
@@ -267,6 +283,44 @@ export function SettingsPanel() {
           >
             <Lock className="h-3 w-3" />
             Lock Now
+          </button>
+        </div>
+      </div>
+
+      {/* Stop / Resume Blocker */}
+      <div className={`
+        glass-card rounded-2xl p-6 relative overflow-hidden transition-all duration-500
+        ${isDisabled ? 'border border-emerald-500/30 shadow-[0_0_30px_-8px_rgba(52,211,153,0.2)]' : ''}
+      `}>
+        {isDisabled && (
+          <div className="absolute -bottom-8 -right-8 w-24 h-24 bg-emerald-500/8 rounded-full blur-2xl pointer-events-none" />
+        )}
+        <div className="relative flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2.5 mb-1.5">
+              <div className={`flex items-center justify-center rounded-lg p-1.5 ${isDisabled ? 'bg-emerald-500/15' : 'bg-muted/50'}`}>
+                <ShieldAlert className={`h-4 w-4 ${isDisabled ? 'text-emerald-400' : 'text-muted-foreground/80'}`} />
+              </div>
+              <h3 className="text-sm font-bold">Blocking Active</h3>
+            </div>
+            <p className="text-xs text-muted-foreground/70 pl-8">
+              {isDisabled ? 'Blocking is OFF — timer will not re-lock' : 'Stop blocking entirely until manually re-enabled'}
+            </p>
+          </div>
+          <button
+            onClick={handleToggleBlocker}
+            disabled={!agentOnline}
+            className={`
+              flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold
+              transition-all duration-300 shrink-0 cursor-pointer
+              disabled:opacity-30 disabled:cursor-not-allowed
+              ${isDisabled
+                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/25'
+                : 'bg-secondary/80 text-muted-foreground border border-border/50 hover:bg-secondary hover:text-foreground'}
+            `}
+          >
+            <ShieldAlert className="h-3 w-3" />
+            {isDisabled ? 'Resume Blocking' : 'Stop Blocking'}
           </button>
         </div>
       </div>

@@ -24,9 +24,11 @@ const fs = require('fs')
 const BLOCKED_PROCESSES = new Set([
     'tradingview.exe',
     'tradingview',
-    'ctrader.exe',
-    'ctrader',
+    // cTrader is intentionally NOT killed — it stays alive so local cBots
+    // can catch PriceAlerts.Triggered events and fire the unlock webhook.
+    // Trading is blocked by the fullscreen overlay in main.js instead.
 ])
+
 
 // Well-known default paths (updated at runtime from settings)
 const DEFAULT_CTRADER_PATH =
@@ -57,6 +59,8 @@ class BlockerState extends EventEmitter {
         this._reminderSent = { 5: false, 1: false }
         // Hard Lock Mode — when true, only TradingView alerts can unlock (no manual override)
         this.hardLockMode = false
+        // Disabled mode — when true, blocking is completely suspended (no re-lock on expiry)
+        this.disabled = false
     }
 
     /** Unlock for `duration` minutes, optionally launching apps */
@@ -79,6 +83,7 @@ class BlockerState extends EventEmitter {
 
     /** Force re-lock immediately */
     forceLock() {
+        if (this.disabled) return false  // Can't lock when blocking is disabled
         this.isLocked = true
         this.unlockExpiresAt = null
         this._reminderSent = { 5: false, 1: false }
@@ -87,8 +92,26 @@ class BlockerState extends EventEmitter {
         return true
     }
 
+    /** Completely disable blocking — no re-locks, no kills, overlay hidden */
+    disableBlocking() {
+        this.disabled = true
+        this.isLocked = false
+        this.unlockExpiresAt = null
+        this._reminderSent = { 5: false, 1: false }
+        console.log('[FocusGuard] ⏹ Blocking DISABLED — session fully open')
+        this.emit('unlocked', { ticker: '', message: 'Blocking stopped', duration: 0 })
+    }
+
+    /** Re-enable blocking and immediately lock */
+    enableBlocking() {
+        this.disabled = false
+        this.forceLock()
+        console.log('[FocusGuard] ▶ Blocking ENABLED')
+    }
+
     /** Called every scan tick — handles expiry + warnings */
     tickExpiry() {
+        if (this.disabled) return null          // Never re-lock when disabled
         if (this.isLocked || !this.unlockExpiresAt) return null
         const now = Date.now()
         const remaining = this.unlockExpiresAt.getTime() - now
@@ -139,6 +162,7 @@ class BlockerState extends EventEmitter {
 
         return {
             isLocked: this.isLocked,
+            disabled: this.disabled,
             unlockExpiresAt: this.unlockExpiresAt?.toISOString() ?? null,
             unlockMinutes: this.unlockMinutes,
             remainingMinutes,

@@ -26,6 +26,7 @@ const BLOCKER_PORT = 51700   // Must match blocker.js
 const UI_PORT = 51701         // Static file server for packaged build
 
 let mainWindow = null
+let overlayWindow = null
 let tray = null
 let uiServer = null
 let isQuitting = false
@@ -224,10 +225,53 @@ function updateTrayMenu() {
     tray.setContextMenu(menu)
 }
 
+// ── Overlay Lock Window ───────────────────────────
+/**
+ * Creates a fullscreen always-on-top overlay that covers ALL windows
+ * (including cTrader) so the user cannot interact with trading platforms.
+ * cTrader's process stays alive so local cBots can still fire webhooks.
+ */
+function showOverlay() {
+    if (overlayWindow && !overlayWindow.isDestroyed()) return // already shown
+
+    const overlayPath = isDev
+        ? path.join(__dirname, '..', 'public', 'lock-overlay.html')
+        : path.join(path.dirname(app.getAppPath()), 'public', 'lock-overlay.html')
+
+    overlayWindow = new BrowserWindow({
+        fullscreen: true,
+        alwaysOnTop: true,
+        frame: false,
+        transparent: false,
+        focusable: false,       // Overlay can't be focused — only the real app can dismiss it
+        skipTaskbar: true,
+        backgroundColor: '#080810',
+        webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+        },
+    })
+
+    overlayWindow.loadFile(overlayPath)
+    overlayWindow.setAlwaysOnTop(true, 'screen-saver') // Highest z-order level
+    overlayWindow.setIgnoreMouseEvents(false)           // Block mouse clicks
+    overlayWindow.on('closed', () => { overlayWindow = null })
+    console.log('[FocusGuard] 🔒 Overlay lock screen shown')
+}
+
+function hideOverlay() {
+    if (overlayWindow && !overlayWindow.isDestroyed()) {
+        overlayWindow.close()
+        overlayWindow = null
+        console.log('[FocusGuard] 🔓 Overlay lock screen dismissed')
+    }
+}
+
 // ── Notifications ─────────────────────────────────
 function registerNotifications(state) {
     state.on('unlocked', ({ ticker, message, duration }) => {
         updateTrayMenu()
+        hideOverlay()  // ← Dismiss fullscreen lock overlay
 
         // Custom glassmorphism overlay notification with alert sound
         showAlertNotification({
@@ -251,6 +295,7 @@ function registerNotifications(state) {
 
     state.on('locked', ({ reason }) => {
         updateTrayMenu()
+        showOverlay()  // ← Show fullscreen lock overlay
         if (Notification.isSupported() && reason === 'expired') {
             new Notification({
                 title: 'FocusGuard — Session Expired',
@@ -278,6 +323,13 @@ ipcMain.handle('blocker:status', () => {
 ipcMain.handle('blocker:lock', () => {
     const s = getState(); if (s) s.forceLock(); return { ok: true }
 })
+ipcMain.handle('blocker:disable', () => {
+    const s = getState(); if (s) s.disableBlocking(); return { ok: true }
+})
+ipcMain.handle('blocker:enable', () => {
+    const s = getState(); if (s) s.enableBlocking(); return { ok: true }
+})
+
 ipcMain.handle('tunnel:url', () => getTunnelUrl())
 ipcMain.handle('tunnel:savedToken', () => getSavedToken())
 ipcMain.handle('tunnel:start', async (_e, token) => {
@@ -341,73 +393,6 @@ ipcMain.handle('blocker:getSavedPaths', () => {
     return { ctraderPath: cfg.ctraderPath || null, tradingviewPath: cfg.tradingviewPath || null }
 })
 
-ipcMain.handle('ctrader:installBot', async () => {
-    try {
-        const cAlgoRobotsDir = path.join(process.env.USERPROFILE || process.env.HOME, 'Documents', 'cAlgo', 'Sources', 'Robots')
-        if (!fs.existsSync(cAlgoRobotsDir)) {
-            return { error: 'cTrader Automate directory not found. Please open cTrader at least once.' }
-        }
-
-        const botDir = path.join(cAlgoRobotsDir, 'FocusGuardBridge')
-        if (!fs.existsSync(botDir)) fs.mkdirSync(botDir, { recursive: true })
-
-        const botCode = `using System;
-using System.Net;
-using System.Text;
-using cAlgo.API;
-
-namespace cAlgo.Robots
-{
-    [Robot(TimeZone = TimeZones.UTC, AccessRights = AccessRights.FullAccess)]
-    public class FocusGuardBridge : Robot
-    {
-        protected override void OnStart()
-        {
-            Print("FocusGuard Webhook Bridge Started. Listening for Native Alerts...");
-            PriceAlerts.Triggered += OnPriceAlertTriggered;
-        }
-
-        private void OnPriceAlertTriggered(PriceAlertTriggeredEventArgs args)
-        {
-            Print("Native Alert Triggered for {0} at {1}. Sending webhook to FocusGuard...", args.PriceAlert.SymbolName, args.PriceAlert.Price);
-            SendWebhook(args.PriceAlert.SymbolName, "Alert Triggered at " + args.PriceAlert.Price);
-        }
-
-        private void SendWebhook(string ticker, string message)
-        {
-            try
-            {
-                var request = WebRequest.Create("http://localhost:51700/api/alert");
-                request.Method = "POST";
-                request.ContentType = "application/json";
-                
-                string json = string.Format("{\\"ticker\\":\\"{0}\\", \\"message\\":\\"{1}\\"}", ticker, message);
-                byte[] data = Encoding.UTF8.GetBytes(json);
-                request.ContentLength = data.Length;
-                
-                using (var stream = request.GetRequestStream())
-                {
-                    stream.Write(data, 0, data.Length);
-                }
-                
-                request.GetResponse();
-                Print("FocusGuard Unlocked Successfully!");
-            }
-            catch (Exception ex)
-            {
-                Print("Webhook Error: " + ex.Message);
-            }
-        }
-    }
-}
-`
-        fs.writeFileSync(path.join(botDir, 'FocusGuardBridge.cs'), botCode)
-        return { ok: true }
-    } catch (err) {
-        console.error('Failed to install cTrader Bot:', err)
-        return { error: err.message }
-    }
-})
 
 // ── Emergency Codes ────────────────────────────────
 const crypto = require('crypto')

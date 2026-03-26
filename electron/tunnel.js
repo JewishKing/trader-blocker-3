@@ -68,11 +68,18 @@ async function startTunnel(port, authToken) {
 
     try {
         console.log('[FocusGuard] Starting ngrok tunnel...')
-        _listener = await ngrok.forward({
+        
+        const config = loadConfig()
+        const options = {
             addr: port,
             authtoken: token,
             proto: 'http',
-        })
+        }
+        if (config.ngrokDomain) {
+            options.domain = config.ngrokDomain
+        }
+
+        _listener = await ngrok.forward(options)
         _tunnelUrl = _listener.url()
         console.log(`[FocusGuard] ✅ Tunnel active: ${_tunnelUrl}`)
         console.log(`[FocusGuard]    TradingView webhook: ${_tunnelUrl}/alert`)

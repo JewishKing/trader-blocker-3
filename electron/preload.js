@@ -8,6 +8,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // Blocker
     getStatus: () => ipcRenderer.invoke('blocker:status'),
     forceLock: () => ipcRenderer.invoke('blocker:lock'),
+    disableBlocker: () => ipcRenderer.invoke('blocker:disable'),
+    enableBlocker: () => ipcRenderer.invoke('blocker:enable'),
     // Tunnel
     getTunnelUrl: () => ipcRenderer.invoke('tunnel:url'),
     getSavedToken: () => ipcRenderer.invoke('tunnel:savedToken'),
@@ -22,9 +24,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getSavedPaths: () => ipcRenderer.invoke('blocker:getSavedPaths'),
     updatePaths: (paths) => ipcRenderer.invoke('blocker:updatePaths', paths),
     setAutoLaunch: (enabled) => ipcRenderer.invoke('blocker:setAutoLaunch', enabled),
-    // cTrader Bot
-    installCTraderBot: () => ipcRenderer.invoke('ctrader:installBot'),
     // Emergency Codes
+
     getEmergencyCodes: () => ipcRenderer.invoke('emergency:getCodes'),
     generateEmergencyCodes: () => ipcRenderer.invoke('emergency:generate'),
     useEmergencyCode: (code) => ipcRenderer.invoke('emergency:use', code),
