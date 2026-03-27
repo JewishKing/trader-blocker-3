@@ -1,6 +1,7 @@
 {
   "name": "focusguard",
-  "version": "2.0.19",
+  "version": "2.0.20",
+
 
   "description": "FocusGuard - Trading Discipline System for Windows",
   "private": true,

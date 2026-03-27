@@ -234,10 +234,6 @@ function updateTrayMenu() {
 function showOverlay() {
     if (overlayWindow && !overlayWindow.isDestroyed()) return // already shown
 
-    const overlayPath = isDev
-        ? path.join(__dirname, '..', 'public', 'lock-overlay.html')
-        : path.join(path.dirname(app.getAppPath()), 'public', 'lock-overlay.html')
-
     overlayWindow = new BrowserWindow({
         fullscreen: true,
         alwaysOnTop: true,
@@ -252,12 +248,20 @@ function showOverlay() {
         },
     })
 
-    overlayWindow.loadFile(overlayPath)
+    if (isDev) {
+        // Dev: load directly from the local public/ folder
+        overlayWindow.loadFile(path.join(__dirname, '..', 'public', 'lock-overlay.html'))
+    } else {
+        // Production: served by the embedded static file server (Next.js copies public/ → out/)
+        overlayWindow.loadURL(`http://localhost:${UI_PORT}/lock-overlay.html`)
+    }
+
     overlayWindow.setAlwaysOnTop(true, 'screen-saver') // Highest z-order level
     overlayWindow.setIgnoreMouseEvents(false)           // Block mouse clicks
     overlayWindow.on('closed', () => { overlayWindow = null })
     console.log('[FocusGuard] 🔒 Overlay lock screen shown')
 }
+
 
 function hideOverlay() {
     if (overlayWindow && !overlayWindow.isDestroyed()) {
