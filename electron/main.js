@@ -6,7 +6,7 @@ const path = require('path')
 const fs = require('fs')
 
 // ── Embedded services ────────────────────────────
-const { startBlocker, stopBlocker, getState } = require('./blocker')
+const { startBlocker, stopBlocker, getState, restoreCTraderWindows } = require('./blocker')
 const { startTunnel, stopTunnel, getTunnelUrl, getSavedToken, saveConfig } = require('./tunnel')
 const { showAlertNotification } = require('./notification')
 
@@ -26,7 +26,6 @@ const BLOCKER_PORT = 51700   // Must match blocker.js
 const UI_PORT = 51701         // Static file server for packaged build
 
 let mainWindow = null
-let overlayWindow = null
 let tray = null
 let uiServer = null
 let isQuitting = false
@@ -225,57 +224,11 @@ function updateTrayMenu() {
     tray.setContextMenu(menu)
 }
 
-// ── Overlay Lock Window ───────────────────────────
-/**
- * Creates a fullscreen always-on-top overlay that covers ALL windows
- * (including cTrader) so the user cannot interact with trading platforms.
- * cTrader's process stays alive so local cBots can still fire webhooks.
- */
-function showOverlay() {
-    if (overlayWindow && !overlayWindow.isDestroyed()) return // already shown
-
-    overlayWindow = new BrowserWindow({
-        fullscreen: true,
-        alwaysOnTop: true,
-        frame: false,
-        transparent: false,
-        focusable: false,       // Overlay can't be focused — only the real app can dismiss it
-        skipTaskbar: true,
-        backgroundColor: '#080810',
-        webPreferences: {
-            nodeIntegration: false,
-            contextIsolation: true,
-        },
-    })
-
-    if (isDev) {
-        // Dev: load directly from the local public/ folder
-        overlayWindow.loadFile(path.join(__dirname, '..', 'public', 'lock-overlay.html'))
-    } else {
-        // Production: served by the embedded static file server (Next.js copies public/ → out/)
-        overlayWindow.loadURL(`http://localhost:${UI_PORT}/lock-overlay.html`)
-    }
-
-    overlayWindow.setAlwaysOnTop(true, 'screen-saver') // Highest z-order level
-    overlayWindow.setIgnoreMouseEvents(false)           // Block mouse clicks
-    overlayWindow.on('closed', () => { overlayWindow = null })
-    console.log('[FocusGuard] 🔒 Overlay lock screen shown')
-}
-
-
-function hideOverlay() {
-    if (overlayWindow && !overlayWindow.isDestroyed()) {
-        overlayWindow.close()
-        overlayWindow = null
-        console.log('[FocusGuard] 🔓 Overlay lock screen dismissed')
-    }
-}
-
 // ── Notifications ─────────────────────────────────
 function registerNotifications(state) {
     state.on('unlocked', ({ ticker, message, duration }) => {
         updateTrayMenu()
-        hideOverlay()  // ← Dismiss fullscreen lock overlay
+        restoreCTraderWindows()  // ← Restore hidden cTrader window so user can trade
 
         // Custom glassmorphism overlay notification with alert sound
         showAlertNotification({
@@ -299,7 +252,6 @@ function registerNotifications(state) {
 
     state.on('locked', ({ reason }) => {
         updateTrayMenu()
-        showOverlay()  // ← Show fullscreen lock overlay
         if (Notification.isSupported() && reason === 'expired') {
             new Notification({
                 title: 'FocusGuard — Session Expired',

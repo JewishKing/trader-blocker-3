@@ -228,20 +228,59 @@ class BlockerState extends EventEmitter {
  * Uses `tasklist` (built into every Windows version since XP) to enumerate
  * running processes. Kills any that are in BLOCKED_PROCESSES when locked.
  */
+function hideCTraderWindows(pid) {
+    // Hide cTrader's UI window without killing the process.
+    // The local cBot continues running and can catch PriceAlerts.Triggered.
+    // SW_HIDE = 0: window is completely hidden (no taskbar button, no interaction).
+    const ps = [
+        `$p=Get-Process -Id ${pid} -EA SilentlyContinue`,
+        `if($p-and$p.MainWindowHandle-ne[IntPtr]::Zero){`,
+        `Add-Type -TypeDefinition 'using System;using System.Runtime.InteropServices;`,
+        `public class WH{[DllImport("user32.dll")]`,
+        `public static extern bool ShowWindow(IntPtr h,int n);}' -EA SilentlyContinue`,
+        `;[WH]::ShowWindow($p.MainWindowHandle,0)}`,
+    ].join('')
+    exec(`powershell -NoProfile -NonInteractive -Command "${ps}"`)
+}
+
+function restoreCTraderWindows() {
+    // Restore hidden cTrader windows (SW_SHOW = 5) when unlocking
+    const ps = [
+        `$procs=Get-Process ctrader -EA SilentlyContinue`,
+        `;if($procs){`,
+        `Add-Type -TypeDefinition 'using System;using System.Runtime.InteropServices;`,
+        `public class WH2{[DllImport("user32.dll")]`,
+        `public static extern bool ShowWindow(IntPtr h,int n);}' -EA SilentlyContinue`,
+        `;$procs|ForEach-Object{[WH2]::ShowWindow($_.MainWindowHandle,9)}}`,   // SW_RESTORE = 9
+    ].join('')
+    exec(`powershell -NoProfile -NonInteractive -Command "${ps}"`)
+}
+
+/**
+ * Scans running processes and:
+ *  - Kills TradingView (fully blocked)
+ *  - Hides cTrader's window (blocked but process alive for local cBot)
+ */
 function scanAndKill(state) {
     exec('tasklist /fo csv /nh', (err, stdout) => {
         if (err || !stdout) return
 
-        // Each line: "process.exe","PID","session","#","mem"
         const lines = stdout.split('\n')
         for (const line of lines) {
             const match = line.match(/^"([^"]+)","(\d+)"/)
             if (!match) continue
             const [, name, pid] = match
             const nameLower = name.toLowerCase()
+
+            if (nameLower === 'ctrader.exe') {
+                // Hide cTrader UI so user can't trade, but keep process for local cBot
+                hideCTraderWindows(pid)
+                continue
+            }
+
             if (!BLOCKED_PROCESSES.has(nameLower)) continue
 
-            // Kill it via taskkill (no psutil needed)
+            // Kill all other blocked processes (TradingView etc.)
             exec(`taskkill /PID ${pid} /F /T`, (killErr) => {
                 if (!killErr) {
                     console.log(`[FocusGuard] ⛔ Killed ${name} (PID ${pid})`)
@@ -251,6 +290,7 @@ function scanAndKill(state) {
         }
     })
 }
+
 
 // ── Auto-detect app paths ─────────────────────────
 function detectPaths(state) {
@@ -485,4 +525,5 @@ function stopBlocker() {
 /** Access the running state (returns null if not started) */
 function getState() { return _state }
 
-module.exports = { startBlocker, stopBlocker, getState }
+module.exports = { startBlocker, stopBlocker, getState, restoreCTraderWindows }
+
