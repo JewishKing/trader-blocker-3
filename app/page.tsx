@@ -7,6 +7,7 @@ const AppStatus = dynamic(() => import('@/components/app-status').then(m => ({ d
 const ActivityLog = dynamic(() => import('@/components/activity-log').then(m => ({ default: m.ActivityLog })), { ssr: false })
 const AlertPanel = dynamic(() => import('@/components/alert-panel').then(m => ({ default: m.AlertPanel })), { ssr: false })
 const SettingsPanel = dynamic(() => import('@/components/settings-panel').then(m => ({ default: m.SettingsPanel })), { ssr: false })
+const WinrateCalculator = dynamic(() => import('@/components/winrate-calculator').then(m => ({ default: m.WinrateCalculator })), { ssr: false })
 
 export default function DashboardPage() {
   return (
@@ -24,6 +25,11 @@ export default function DashboardPage() {
           <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <AlertPanel />
             <SettingsPanel />
+          </section>
+
+          {/* Win Rate Analyzer */}
+          <section>
+            <WinrateCalculator />
           </section>
 
           {/* Activity Log */}

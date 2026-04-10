@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAppState, useAppActions } from '@/lib/store'
 import { Slider } from '@/components/ui/slider'
-import { Timer, Lock, Shield, Gauge, Check, AlertTriangle, KeyRound, ShieldAlert, RefreshCw } from 'lucide-react'
+import { Timer, Lock, Shield, Gauge, Check, AlertTriangle, ShieldAlert } from 'lucide-react'
 import useSWR from 'swr'
 
 const formatTime = (minutes: number): string => {
@@ -29,13 +29,7 @@ export function SettingsPanel() {
   const [hardLockEnabled, setHardLockEnabled] = useState(false)
   const [hardLockToggling, setHardLockToggling] = useState(false)
 
-  // Emergency codes state
-  const [codeInfo, setCodeInfo] = useState<{ remaining: number; generated: boolean; cooldownUntil: string | null }>({ remaining: 0, generated: false, cooldownUntil: null })
-  const [generatedCodes, setGeneratedCodes] = useState<string[] | null>(null)
-  const [useCodeInput, setUseCodeInput] = useState('')
-  const [useCodeError, setUseCodeError] = useState('')
-  const [useCodeSuccess, setUseCodeSuccess] = useState(false)
-  const [showUseInput, setShowUseInput] = useState(false)
+
 
   const { data: blockerData, mutate } = useSWR(
     `${BLOCKER_URL}/status`,
@@ -56,11 +50,7 @@ export function SettingsPanel() {
   const isLocked = blockerData?.isLocked ?? true
   const isDisabled = blockerData?.disabled ?? false
 
-  // Load emergency code info
-  useEffect(() => {
-    if (!electron) return
-    electron.getEmergencyCodes?.().then((info: any) => { if (info) setCodeInfo(info) })
-  }, [])
+
 
   useEffect(() => {
     setLocalDuration(unlockDurationMinutes)
@@ -136,32 +126,9 @@ export function SettingsPanel() {
     }
   }
 
-  const handleGenerateCodes = async () => {
-    if (!electron) return
-    const result = await electron.generateEmergencyCodes?.()
-    if (result?.codes) {
-      setGeneratedCodes(result.codes)
-      setCodeInfo(prev => ({ ...prev, remaining: 5, generated: true }))
-    }
-  }
 
-  const handleUseCode = async () => {
-    if (!electron || !useCodeInput) return
-    setUseCodeError('')
-    const result = await electron.useEmergencyCode?.(useCodeInput)
-    if (result?.ok) {
-      setUseCodeSuccess(true)
-      setCodeInfo(prev => ({ ...prev, remaining: result.remaining, cooldownUntil: result.cooldownUntil }))
-      setShowUseInput(false)
-      setUseCodeInput('')
-      setTimeout(() => { setUseCodeSuccess(false); mutate() }, 3000)
-    } else {
-      setUseCodeError(result?.error || 'Invalid code')
-    }
-  }
 
   const durationPercent = Math.min((localDuration / 120) * 100, 100)
-  const cooldownActive = codeInfo.cooldownUntil && new Date(codeInfo.cooldownUntil) > new Date()
 
   return (
     <div className="flex flex-col gap-5 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
@@ -358,122 +325,6 @@ export function SettingsPanel() {
         </div>
       </div>
 
-      {/* Emergency Codes Card */}
-      <div className="glass-card rounded-2xl p-6 relative overflow-hidden">
-        <div className="absolute -top-8 left-4 w-20 h-20 bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />
-        <div className="relative">
-          <div className="flex items-center gap-2.5 mb-1.5">
-            <div className="flex items-center justify-center rounded-lg bg-amber-500/10 p-1.5">
-              <KeyRound className="h-4 w-4 text-amber-400" />
-            </div>
-            <h3 className="text-sm font-bold">Emergency Override Codes</h3>
-          </div>
-          <p className="text-xs text-muted-foreground/70 pl-8 mb-5 leading-relaxed">
-            5 one-time codes to bypass Hard Lock. Once used, they're gone. Resets after 24h cooldown.
-          </p>
-
-          {/* Code slots */}
-          <div className="flex gap-2 mb-5 pl-8">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div
-                key={i}
-                className={`flex-1 h-8 rounded-lg flex items-center justify-center text-xs font-mono font-bold transition-all duration-300
-                  ${i < codeInfo.remaining
-                    ? 'bg-amber-500/15 border border-amber-500/30 text-amber-400 shadow-[0_0_8px_-2px_rgba(245,158,11,0.3)]'
-                    : 'bg-muted/20 border border-border/30 text-muted-foreground/50'}`}
-              >
-                {i < codeInfo.remaining ? '●' : '○'}
-              </div>
-            ))}
-          </div>
-
-          {/* Generated codes display (shown once after generation) */}
-          {generatedCodes && (
-            <div className="mb-4 pl-8">
-              <p className="text-[11px] text-amber-400/70 mb-2 uppercase tracking-wider font-bold">Write these down now — shown only once:</p>
-              <div className="grid grid-cols-5 gap-1.5">
-                {generatedCodes.map((c, i) => (
-                  <div key={i} className="glass-inner rounded-lg px-2 py-1.5 text-center font-mono text-sm font-bold text-amber-300">
-                    {c}
-                  </div>
-                ))}
-              </div>
-              <button
-                onClick={() => setGeneratedCodes(null)}
-                className="mt-2 text-[11px] text-muted-foreground/60 hover:text-muted-foreground/80 transition-colors cursor-pointer"
-              >
-                I've written them down ✓
-              </button>
-            </div>
-          )}
-
-          {/* Use code input */}
-          {showUseInput && (
-            <div className="mb-4 pl-8">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  maxLength={6}
-                  placeholder="6-digit code"
-                  value={useCodeInput}
-                  onChange={e => setUseCodeInput(e.target.value.replace(/\D/g, ''))}
-                  className="flex-1 glass-inner rounded-lg px-3 py-2 text-sm font-mono text-center border border-border/30 bg-transparent focus:outline-none focus:border-amber-500/40 transition-colors"
-                />
-                <button
-                  onClick={handleUseCode}
-                  disabled={useCodeInput.length !== 6}
-                  className="px-4 py-2 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-400 text-sm font-semibold hover:bg-amber-500/25 disabled:opacity-40 transition-all cursor-pointer"
-                >
-                  Use
-                </button>
-                <button
-                  onClick={() => { setShowUseInput(false); setUseCodeError('') }}
-                  className="px-3 py-2 rounded-lg bg-muted/30 text-muted-foreground/80 text-sm hover:bg-muted/50 transition-all cursor-pointer"
-                >
-                  Cancel
-                </button>
-              </div>
-              {useCodeError && <p className="text-xs text-destructive/70 mt-1.5">{useCodeError}</p>}
-            </div>
-          )}
-
-          {useCodeSuccess && (
-            <div className="mb-4 pl-8 flex items-center gap-2 text-green-400 text-sm">
-              <Check className="h-3.5 w-3.5" /> Emergency code accepted — Hard Lock bypassed
-            </div>
-          )}
-
-          {/* Action buttons */}
-          <div className="flex gap-2 pl-8">
-            {!codeInfo.generated || cooldownActive ? (
-              <button
-                onClick={handleGenerateCodes}
-                disabled={!!cooldownActive || !electron}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm font-semibold hover:bg-amber-500/20 disabled:opacity-40 transition-all cursor-pointer"
-              >
-                <RefreshCw className="h-3 w-3" />
-                {cooldownActive ? 'Cooldown active' : 'Generate 5 Codes'}
-              </button>
-            ) : (
-              <button
-                onClick={handleGenerateCodes}
-                disabled={!!cooldownActive || !electron}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-muted/20 border border-border/30 text-muted-foreground/70 text-sm hover:bg-muted/40 disabled:opacity-30 transition-all cursor-pointer"
-              >
-                <RefreshCw className="h-3 w-3" /> Regenerate
-              </button>
-            )}
-            {codeInfo.remaining > 0 && !showUseInput && (
-              <button
-                onClick={() => setShowUseInput(true)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-muted/20 border border-border/30 text-muted-foreground/80 text-sm hover:bg-muted/40 transition-all cursor-pointer"
-              >
-                <KeyRound className="h-3 w-3" /> Use a Code
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
 
       {/* Agent Info */}
       <div className="glass-card rounded-2xl p-6 relative overflow-hidden">
