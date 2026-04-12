@@ -22,11 +22,19 @@ export function Header() {
     return () => clearInterval(id)
   }, [])
 
-  const { data } = useSWR(
+  const { data, mutate } = useSWR(
     mounted ? `${BLOCKER_URL}/status` : null,
     blockerFetcher,
-    { refreshInterval: 2000, revalidateOnFocus: false }
+    { refreshInterval: 1500, revalidateOnFocus: false }
   )
+
+  // Instant push from main process when alert fires or lock changes
+  useEffect(() => {
+    const electron = typeof window !== 'undefined' ? (window as any).electronAPI : null
+    if (!electron?.onStateUpdate) return
+    const unsub = electron.onStateUpdate((freshState: any) => { mutate(freshState, false) })
+    return () => { if (typeof unsub === 'function') unsub() }
+  }, [mutate])
 
   const agentOnline = !!data
   const isLocked = data?.isLocked ?? true

@@ -226,11 +226,24 @@ function updateTrayMenu() {
 
 // ── Notifications ─────────────────────────────────
 function registerNotifications(state) {
+    // Helper: push fresh state to the renderer instantly (no waiting for next SWR poll)
+    function pushStateToRenderer() {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('blocker:stateUpdate', state.toJSON())
+        }
+    }
+
     state.on('unlocked', ({ ticker, message, duration }) => {
         updateTrayMenu()
-        restoreCTraderWindows()  // ← Restore hidden cTrader window so user can trade
+        pushStateToRenderer()  // ← Instant UI update when alert fires
+        restoreCTraderWindows()
 
-        // Custom glassmorphism overlay notification with alert sound
+        // Show FocusGuard window if it was hidden
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            if (mainWindow.isMinimized()) mainWindow.restore()
+            mainWindow.show()
+        }
+
         showAlertNotification({
             ticker,
             message,
@@ -240,7 +253,6 @@ function registerNotifications(state) {
             },
         })
 
-        // Also fire native Windows notification as backup
         if (Notification.isSupported()) {
             new Notification({
                 title: `FocusGuard — ${ticker || 'Alert'}`,
@@ -252,6 +264,7 @@ function registerNotifications(state) {
 
     state.on('locked', ({ reason }) => {
         updateTrayMenu()
+        pushStateToRenderer()  // ← Instant UI update on lock
         if (Notification.isSupported() && reason === 'expired') {
             new Notification({
                 title: 'FocusGuard — Session Expired',
@@ -262,6 +275,7 @@ function registerNotifications(state) {
     })
 
     state.on('warning', ({ minutes }) => {
+        pushStateToRenderer()
         if (Notification.isSupported()) {
             new Notification({
                 title: `FocusGuard — ${minutes}m left`,

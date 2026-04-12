@@ -153,7 +153,16 @@ export function AlertPanel() {
     setTunnelUrl(null)
   }
 
-  const { data: status } = useSWR(`${LOCAL_URL}/status`, fetcher, { refreshInterval: 3000 })
+  const { data: status, mutate: mutateStatus } = useSWR(`${LOCAL_URL}/status`, fetcher, { refreshInterval: 1500 })
+
+  // ── Instant update when cTrader/TradingView alert fires via IPC push ──
+  useEffect(() => {
+    if (!electron?.onStateUpdate) return
+    const unsub = electron.onStateUpdate((freshState: any) => {
+      mutateStatus(freshState, false)  // update SWR cache immediately, no re-fetch
+    })
+    return () => { if (typeof unsub === 'function') unsub() }
+  }, [mutateStatus])
 
   const webhookUrl = tunnelUrl ? `${tunnelUrl}/alert` : `${LOCAL_URL}/alert`
   const isExternal = !!tunnelUrl

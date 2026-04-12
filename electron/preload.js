@@ -29,4 +29,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getEmergencyCodes: () => ipcRenderer.invoke('emergency:getCodes'),
     generateEmergencyCodes: () => ipcRenderer.invoke('emergency:generate'),
     useEmergencyCode: (code) => ipcRenderer.invoke('emergency:use', code),
+    // Push events from main → renderer (instant state sync)
+    onStateUpdate: (callback) => {
+        ipcRenderer.on('blocker:stateUpdate', (_event, state) => callback(state))
+        return () => ipcRenderer.removeAllListeners('blocker:stateUpdate')
+    },
 })
